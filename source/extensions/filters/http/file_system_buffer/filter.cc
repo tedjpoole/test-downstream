@@ -1,3 +1,4 @@
+#include "filter.h"
 #include "source/extensions/filters/http/file_system_buffer/filter.h"
 
 namespace Envoy {
@@ -20,12 +21,13 @@ bool FileSystemBufferFilter::initPerRouteConfig() {
   auto route = request_callbacks_->route();
   FilterConfigVector config_chain;
   if (route) {
-    route->traversePerFilterConfig(
-        FileSystemBufferFilter::filterName(),
-        [&config_chain](const Router::RouteSpecificFilterConfig& route_cfg) {
-          auto cfg = dynamic_cast<const FileSystemBufferFilterConfig*>(&route_cfg);
-          config_chain.emplace_back(*cfg);
-        });
+    // TODO(wbpcode): fix this to use the callbacks to get the route specific configs.
+    for (const auto* cfg : route->perFilterConfigs(FileSystemBufferFilter::filterName())) {
+      auto typed_cfg = dynamic_cast<const FileSystemBufferFilterConfig*>(cfg);
+      if (typed_cfg) {
+        config_chain.emplace_back(*typed_cfg);
+      }
+    }
   }
   config_chain.emplace_back(*base_config_);
   config_.emplace(config_chain);
@@ -67,13 +69,8 @@ Http::FilterHeadersStatus FileSystemBufferFilter::decodeHeaders(Http::RequestHea
   // the memory limit, once in our own buffer and once in the outgoing buffer. (Plus overflow
   // because the limit isn't hard.)
   request_callbacks_->setDecoderBufferLimit(request_state_.config_->memoryBufferBytesLimit());
-  // If we're going to buffer everything, don't even start sending the data until we're ready.
-  if (request_state_.injecting_content_length_header_ ||
-      request_state_.config_->behavior().alwaysFullyBuffer()) {
-    request_headers_ = &headers;
-    return Http::FilterHeadersStatus::StopIteration;
-  }
-  return Http::FilterHeadersStatus::Continue;
+  request_headers_ = &headers;
+  return Http::FilterHeadersStatus::StopIteration;
 }
 
 Http::FilterHeadersStatus FileSystemBufferFilter::encodeHeaders(Http::ResponseHeaderMap& headers,
@@ -100,13 +97,8 @@ Http::FilterHeadersStatus FileSystemBufferFilter::encodeHeaders(Http::ResponseHe
   // the memory limit, once in our own buffer and once in the outgoing buffer. (Plus overflow
   // because the limit isn't hard.)
   response_callbacks_->setEncoderBufferLimit(response_state_.config_->memoryBufferBytesLimit());
-  // If we're going to buffer everything, don't even start sending the data until we're ready.
-  if (response_state_.injecting_content_length_header_ ||
-      response_state_.config_->behavior().alwaysFullyBuffer()) {
-    response_headers_ = &headers;
-    return Http::FilterHeadersStatus::StopIteration;
-  }
-  return Http::FilterHeadersStatus::Continue;
+  response_headers_ = &headers;
+  return Http::FilterHeadersStatus::StopIteration;
 }
 
 void FileSystemBufferFilter::onAboveWriteBufferHighWatermark() {

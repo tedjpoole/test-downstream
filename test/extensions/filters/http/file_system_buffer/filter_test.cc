@@ -270,7 +270,8 @@ TEST_F(FileSystemBufferFilterTest, DoesNotBufferRequestWhenContentLengthPresent)
         inject_content_length_if_necessary: {}
   )");
   request_headers_.setContentLength(6);
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->decodeHeaders(request_headers_, false));
+  EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
+            filter_->decodeHeaders(request_headers_, false));
   Buffer::OwnedImpl data1("hello");
   Buffer::OwnedImpl data2(" banana");
   EXPECT_EQ(Http::FilterDataStatus::StopIterationNoBuffer, filter_->decodeData(data1, false));
@@ -290,7 +291,8 @@ TEST_F(FileSystemBufferFilterTest, DoesNotBufferResponseWhenContentLengthPresent
         inject_content_length_if_necessary: {}
   )");
   response_headers_.setContentLength(6);
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->encodeHeaders(response_headers_, false));
+  EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
+            filter_->encodeHeaders(response_headers_, false));
   Buffer::OwnedImpl data1("hello");
   Buffer::OwnedImpl data2(" banana");
   EXPECT_EQ(Http::FilterDataStatus::StopIterationNoBuffer, filter_->encodeData(data1, false));
@@ -312,7 +314,8 @@ constexpr int outerWatermarkAfterIntercepting() {
 
 TEST_F(FileSystemBufferFilterTest, BuffersResponseWhenDownstreamIsSlow) {
   createFilterFromYaml(minimal_config);
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->encodeHeaders(response_headers_, false));
+  EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
+            filter_->encodeHeaders(response_headers_, false));
   Buffer::OwnedImpl data1("hello");
   Buffer::OwnedImpl data2(" banana");
   sendResponseHighWatermark();
@@ -340,7 +343,8 @@ TEST_F(FileSystemBufferFilterTest,
     response:
       memory_buffer_bytes_limit: 6
   )");
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->encodeHeaders(response_headers_, false));
+  EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
+            filter_->encodeHeaders(response_headers_, false));
   Buffer::OwnedImpl data1("hello ");
   Buffer::OwnedImpl data2("wor");
   Buffer::OwnedImpl data3("ld");
@@ -441,7 +445,8 @@ TEST_F(FileSystemBufferFilterTest, ResponseSlowsWhenTotalBufferSizeExceededAndSt
       memory_buffer_bytes_limit: 10
       storage_buffer_bytes_limit: 0
   )");
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->encodeHeaders(response_headers_, false));
+  EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
+            filter_->encodeHeaders(response_headers_, false));
   sendResponseHighWatermark();
   Buffer::OwnedImpl data1("hello ");
   Buffer::OwnedImpl data2("wor");
@@ -475,7 +480,8 @@ TEST_F(FileSystemBufferFilterTest, ResponseSlowsWhenDiskWriteTakesTooLongAndWate
       memory_buffer_bytes_limit: 10
       storage_buffer_queue_high_watermark_bytes: 10
   )");
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_->encodeHeaders(response_headers_, false));
+  EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
+            filter_->encodeHeaders(response_headers_, false));
   // Stream recipient says stop sending right away.
   sendResponseHighWatermark();
   Buffer::OwnedImpl data1("hello worm");
@@ -768,13 +774,11 @@ TEST_F(FileSystemBufferFilterTest, MergesRouteConfig) {
   )");
   auto mock_route = std::make_shared<Router::MockRoute>();
   EXPECT_CALL(decoder_callbacks_, route()).WillOnce(Return(mock_route));
-  EXPECT_CALL(*mock_route, traversePerFilterConfig(_, _))
-      .WillOnce([vhost_config, route_config](
-                    const std::string&,
-                    std::function<void(const Router::RouteSpecificFilterConfig&)> add_config) {
-        add_config(*vhost_config);
-        add_config(*route_config);
-      });
+  EXPECT_CALL(*mock_route, perFilterConfigs(_))
+      .WillOnce(
+          [vhost_config, route_config](absl::string_view) -> Router::RouteSpecificFilterConfigs {
+            return {vhost_config.get(), route_config.get()};
+          });
   // The default config would return Continue, so these returning StopIteration shows that
   // both route_configs were applied.
   EXPECT_EQ(Http::FilterHeadersStatus::StopIteration,
