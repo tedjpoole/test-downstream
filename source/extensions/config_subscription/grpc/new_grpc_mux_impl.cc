@@ -68,7 +68,10 @@ NewGrpcMuxImpl::createGrpcStreamObject(GrpcMuxContext& grpc_mux_context) {
               callbacks, std::move(grpc_mux_context.async_client_),
               grpc_mux_context.service_method_, grpc_mux_context.dispatcher_,
               grpc_mux_context.scope_, std::move(grpc_mux_context.backoff_strategy_),
-              grpc_mux_context.rate_limit_settings_);
+              grpc_mux_context.rate_limit_settings_,
+              GrpcStream<envoy::service::discovery::v3::DeltaDiscoveryRequest,
+                         envoy::service::discovery::v3::DeltaDiscoveryResponse>::
+                  ConnectedStateValue::FIRST_ENTRY);
         },
         /*failover_stream_creator=*/
         grpc_mux_context.failover_async_client_
@@ -91,7 +94,10 @@ NewGrpcMuxImpl::createGrpcStreamObject(GrpcMuxContext& grpc_mux_context) {
                             GrpcMuxFailover<envoy::service::discovery::v3::DeltaDiscoveryRequest,
                                             envoy::service::discovery::v3::DeltaDiscoveryResponse>::
                                 DefaultFailoverBackoffMilliseconds),
-                        grpc_mux_context.rate_limit_settings_);
+                        grpc_mux_context.rate_limit_settings_,
+                        GrpcStream<envoy::service::discovery::v3::DeltaDiscoveryRequest,
+                                   envoy::service::discovery::v3::DeltaDiscoveryResponse>::
+                            ConnectedStateValue::SECOND_ENTRY);
                   })
             : absl::nullopt,
         /*grpc_mux_callbacks=*/*this,
@@ -101,7 +107,10 @@ NewGrpcMuxImpl::createGrpcStreamObject(GrpcMuxContext& grpc_mux_context) {
                                      envoy::service::discovery::v3::DeltaDiscoveryResponse>>(
       this, std::move(grpc_mux_context.async_client_), grpc_mux_context.service_method_,
       grpc_mux_context.dispatcher_, grpc_mux_context.scope_,
-      std::move(grpc_mux_context.backoff_strategy_), grpc_mux_context.rate_limit_settings_);
+      std::move(grpc_mux_context.backoff_strategy_), grpc_mux_context.rate_limit_settings_,
+      GrpcStream<
+          envoy::service::discovery::v3::DeltaDiscoveryRequest,
+          envoy::service::discovery::v3::DeltaDiscoveryResponse>::ConnectedStateValue::FIRST_ENTRY);
 }
 
 NewGrpcMuxImpl::~NewGrpcMuxImpl() { AllMuxes::get().erase(this); }
@@ -175,13 +184,13 @@ void NewGrpcMuxImpl::onDiscoveryResponse(
 void NewGrpcMuxImpl::onStreamEstablished() {
   for (auto& [type_url, subscription] : subscriptions_) {
     UNREFERENCED_PARAMETER(type_url);
-    subscription->sub_state_.markStreamFresh();
+    subscription->sub_state_.markStreamFresh(should_send_initial_resource_versions_);
   }
   pausable_ack_queue_.clear();
   trySendDiscoveryRequests();
 }
 
-void NewGrpcMuxImpl::onEstablishmentFailure() {
+void NewGrpcMuxImpl::onEstablishmentFailure(bool next_attempt_may_send_initial_resource_version) {
   // If this happens while Envoy is still initializing, the onConfigUpdateFailed() we ultimately
   // call on CDS will cause LDS to start up, which adds to subscriptions_ here. So, to avoid a
   // crash, the iteration needs to dance around a little: collect pointers to all
@@ -199,6 +208,7 @@ void NewGrpcMuxImpl::onEstablishmentFailure() {
       }
     }
   } while (all_subscribed.size() != subscriptions_.size());
+  should_send_initial_resource_versions_ = next_attempt_may_send_initial_resource_version;
 }
 
 void NewGrpcMuxImpl::onWriteable() { trySendDiscoveryRequests(); }
@@ -252,7 +262,7 @@ void NewGrpcMuxImpl::updateWatch(const std::string& type_url, Watch* watch,
   for (const auto& resource : resources) {
     if (XdsResourceIdentifier::hasXdsTpScheme(resource)) {
       auto xdstp_resource_or_error = XdsResourceIdentifier::decodeUrn(resource);
-      THROW_IF_STATUS_NOT_OK(xdstp_resource_or_error, throw);
+      THROW_IF_NOT_OK_REF(xdstp_resource_or_error.status());
       auto xdstp_resource = xdstp_resource_or_error.value();
       if (options.add_xdstp_node_context_params_) {
         const auto context = XdsContextParams::encodeResource(
@@ -410,7 +420,7 @@ public:
          OptRef<XdsResourcesDelegate>, bool use_eds_resources_cache) override {
     absl::StatusOr<RateLimitSettings> rate_limit_settings_or_error =
         Utility::parseRateLimitSettings(ads_config);
-    THROW_IF_STATUS_NOT_OK(rate_limit_settings_or_error, throw);
+    THROW_IF_NOT_OK_REF(rate_limit_settings_or_error.status());
     GrpcMuxContext grpc_mux_context{
         /*async_client_=*/std::move(async_client),
         /*failover_async_client_=*/std::move(failover_async_client),
