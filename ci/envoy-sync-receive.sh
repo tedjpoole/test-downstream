@@ -116,7 +116,6 @@ else # merge fail
     gh issue comment "${ISSUE_URL}" --body-file - <<-EOF
 		Failed to ${TITLE}
 		From [${SRC_HEAD_SHA}](https://github.com/${SRC_REPO_PATH}/commit/${SRC_HEAD_SHA})
-		@envoyproxy/envoy-openssl-sync
 	EOF
     info "${ISSUE_OUTCOME}"
 fi
