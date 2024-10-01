@@ -15,6 +15,7 @@ jobs:
   sync:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         ref_name:
           - release/v1.28
