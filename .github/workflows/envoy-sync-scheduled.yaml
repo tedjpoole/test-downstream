@@ -19,8 +19,8 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29  # v4.1.6
       with:
         fetch-depth: 0
-    -run: git remote -v
-    -run: git status
+    - run: git remote -v
+    - run: git status
 
 
 #    - name: "Set git user details"
