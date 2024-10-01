@@ -26,9 +26,13 @@ jobs:
       with:
         ref: ${{ matrix.ref_name }}
         fetch-depth: 0
-    - run: git remote -v
-    - run: git status
 
+    - name: "Set git user details"
+      run: |
+        git config user.name "${{ github.actor }}"
+        git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+    - run: ci/envoy-sync-receive.sh ${{ matrix.ref_name }}
 
 #    - name: "Set git user details"
 #      run: |
