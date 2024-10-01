@@ -4,8 +4,7 @@
 # for existing directories with low coverage.
 declare -a KNOWN_LOW_COVERAGE=(
 "source/common:96.2"
-"source/common/api:84.5" # flaky due to posix: be careful adjusting
-"source/common/api/posix:83.8" # flaky (accept failover non-deterministic): be careful adjusting
+"source/common/common/posix:96.2" # flaky due to posix: be careful adjusting
 "source/common/config:96.1"
 "source/common/crypto:95.5"
 "source/common/event:95.2" # Emulated edge events guards don't report LCOV
@@ -20,6 +19,9 @@ declare -a KNOWN_LOW_COVERAGE=(
 "source/common/secret:95.4"
 "source/common/signal:87.2" # Death tests don't report LCOV
 "source/common/thread:0.0" # Death tests don't report LCOV
+"source/common/tls:94.8"
+"source/common/tls/cert_validator:94.4"
+"source/common/tls/private_key:88.9"
 "source/common/watchdog:58.6" # Death tests don't report LCOV
 "source/exe:94.2" # increased by #32346, need coverage for terminate_handler and hot restart failures
 "source/extensions/common:93.0" #flaky: be careful adjusting
@@ -33,7 +35,6 @@ declare -a KNOWN_LOW_COVERAGE=(
 "source/extensions/filters/http/grpc_json_transcoder:94.2" # TODO(#28232)
 "source/extensions/filters/http/ip_tagging:88.2"
 "source/extensions/filters/http/kill_request:91.7" # Death tests don't report LCOV
-"source/extensions/filters/http/wasm:1.3"  # Disabled due to issue (#24164)
 "source/extensions/filters/listener/original_src:92.1"
 "source/extensions/filters/network/mongo_proxy:96.1"
 "source/extensions/filters/network/sni_cluster:88.9"
@@ -46,9 +47,6 @@ declare -a KNOWN_LOW_COVERAGE=(
 "source/extensions/tracers/opencensus:94.0"
 "source/extensions/tracers/zipkin:95.8"
 "source/extensions/transport_sockets:97.4"
-"source/common/tls:94.8"
-"source/common/tls/cert_validator:94.4"
-"source/common/tls/private_key:88.9"
 "source/extensions/wasm_runtime/wamr:0.0" # Not enabled in coverage build
 "source/extensions/wasm_runtime/wasmtime:0.0" # Not enabled in coverage build
 "source/extensions/watchdog:83.3" # Death tests within extensions
