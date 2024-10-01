@@ -22,6 +22,16 @@ jobs:
           - release/v1.31
           - main
     steps:
+    - name: 'Checkout ci/envoy-sync-receive.sh'
+      uses: actions/checkout@v4
+      with:
+        repository: 'envoyproxy/envoy-openssl'
+        sparse-checkout: 'ci/envoy-sync-receive.sh'
+        sparse-checkout-cone-mode: false
+        path: ".script"
+    - run: pwd
+    - run: ls -la
+    
     - id: appauth
       uses: envoyproxy/toolshed/gh-actions/appauth@actions-v0.2.35
       with:
@@ -29,12 +39,14 @@ jobs:
         app_id: ${{ secrets.ENVOY_CI_UPDATE_APP_ID }}
 
     - name: "Checkout ${{ github.repository }}[${{ matrix.ref_name }}]"
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29  # v4.1.6
+      uses: actions/checkout@v4
       with:
         token: ${{ steps.appauth.outputs.token }}
         ref: ${{ matrix.ref_name }}
         fetch-depth: 0
-
+    - run: pwd
+    - run: ls -la
+    
     - name: "Set git user details"
       run: |
         git config user.name "${{ github.actor }}"
