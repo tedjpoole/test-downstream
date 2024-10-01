@@ -18,20 +18,9 @@ jobs:
       fail-fast: false
       matrix:
         ref_name:
-          - release/v1.28
           - release/v1.31
           - main
     steps:
-    - name: 'Checkout ci/envoy-sync-receive.sh'
-      uses: actions/checkout@v4
-      with:
-        repository: 'envoyproxy/envoy-openssl'
-        sparse-checkout: 'ci/envoy-sync-receive.sh'
-        sparse-checkout-cone-mode: false
-        path: ".script"
-    - run: pwd
-    - run: ls -la
-    
     - id: appauth
       uses: envoyproxy/toolshed/gh-actions/appauth@actions-v0.2.35
       with:
@@ -44,6 +33,15 @@ jobs:
         token: ${{ steps.appauth.outputs.token }}
         ref: ${{ matrix.ref_name }}
         fetch-depth: 0
+    - run: pwd
+    - run: ls -la
+
+    - name: 'Checkout ci/envoy-sync-receive.sh'
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.repository.default_branch }}
+        sparse-checkout: 'ci/envoy-sync-receive.sh'
+        sparse-checkout-cone-mode: false
     - run: pwd
     - run: ls -la
     
