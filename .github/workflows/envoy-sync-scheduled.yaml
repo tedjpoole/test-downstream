@@ -14,10 +14,17 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        ref_name:
+          - release/v1.28
+          - release/v1.31
+          - main
     steps:
-    - name: "Checkout ${{ github.repository }}[${{ github.ref_name }}]"
+    - name: "Checkout ${{ github.repository }}[${{ matrix.ref_name }}]"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29  # v4.1.6
       with:
+        ref: ${{ matrix.ref_name }}
         fetch-depth: 0
     - run: git remote -v
     - run: git status
