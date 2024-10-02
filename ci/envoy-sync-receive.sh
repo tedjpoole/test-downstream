@@ -118,4 +118,5 @@ else # merge fail
 		From [${SRC_HEAD_SHA}](https://github.com/${SRC_REPO_PATH}/commit/${SRC_HEAD_SHA})
 	EOF
     info "${ISSUE_OUTCOME}"
+    exit 1
 fi
