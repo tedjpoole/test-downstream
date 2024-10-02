@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -41,17 +41,13 @@ jobs:
         ref: ${{ github.event.repository.default_branch }}
         sparse-checkout: 'ci/envoy-sync-receive.sh'
         sparse-checkout-cone-mode: false
-        path: 'script'
-    - run: pwd
-    - run: ls -la
-    - run: ls -la 'script'
-    - run: ls -la 'script/ci'
+        path: '.script'
 
     - name: "Set git user details"
       run: |
         git config user.name "${{ github.actor }}"
         git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
 
-    - run: ci/envoy-sync-receive.sh ${{ matrix.ref_name }}
+    - run: .script/ci/envoy-sync-receive.sh ${{ matrix.ref_name }}
       env:
           GH_TOKEN: ${{ steps.appauth.outputs.token }}
