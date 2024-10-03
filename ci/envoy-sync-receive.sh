@@ -26,8 +26,11 @@ set -xeuo pipefail
 [[ -t 1 ]] && ANSI_RED="\033[0;31m"
 [[ -t 1 ]] && ANSI_RESET="\033[0m"
 
-info() { printf "${ANSI_GREEN:-}INFO: %s${ANSI_RESET:-}\n" "$1"; }
-error() { printf "${ANSI_RED:-}ERROR: %s${ANSI_RESET:-}\n" "$1"; }
+info() { printf "${ANSI_GREEN:-}::info:: %s${ANSI_RESET:-}\n" "$1"; }
+error() { printf "${ANSI_RED:-}::error:: %s${ANSI_RESET:-}\n" "$1"; }
+
+SCRATCH="$(mktemp -d)"
+trap 'rm -rf -- "$SCRATCH"' EXIT
 
 SRC_REPO_URL="https://github.com/envoyproxy/envoy.git"
 SRC_REPO_PATH="${SRC_REPO_URL/#*github.com?/}"
@@ -72,7 +75,7 @@ gh repo set-default "${DST_REPO_PATH}"
 
 # Perform the merge using --no-ff option to force creating a merge commit
 info "Performing ${TITLE}"
-if git merge --no-ff -m "${TITLE}" --log "upstream/${SRC_BRANCH_NAME}"; then
+if git merge --no-ff -m "${TITLE}" --log "upstream/${SRC_BRANCH_NAME}" > "${SCRATCH}/mergeout"; then
     DST_NEW_HEAD_SHA="$(git rev-parse HEAD)"
     if [[ "${DST_NEW_HEAD_SHA}" != "${DST_HEAD_SHA}" ]]; then
         git push --force origin "HEAD:${DST_NEW_BRANCH_NAME}"
@@ -115,7 +118,10 @@ else # merge fail
     fi
     gh issue comment "${ISSUE_URL}" --body-file - <<-EOF
 		Failed to ${TITLE}
+		
 		From [${SRC_HEAD_SHA}](https://github.com/${SRC_REPO_PATH}/commit/${SRC_HEAD_SHA})
+		
+		$(cat "${SCRATCH}/mergeout" | fgrep -v 'fix conflicts and then commit the result`)
 	EOF
     info "${ISSUE_OUTCOME}"
     exit 1
