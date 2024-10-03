@@ -102,22 +102,25 @@ else # merge fail
     ISSUE_COUNT=$(gh issue list -S "${TITLE} failed" | wc -l)
     if [[ ${ISSUE_COUNT} == 0 ]]; then
         ISSUE_URL=$(gh issue create --title "${TITLE} failed" --body "${TITLE} failed")
-        ISSUE_OUTCOME="Created ${ISSUE_URL}"
+        ISSUE_ID="$(basename "${ISSUE_URL}")"
+        ISSUE_OUTCOME="Created"
     else
         ISSUE_ID="$(gh issue list -S "${TITLE} failed sort:created-asc" | tail -1 | cut -f1)"
         ISSUE_URL="https://github.com/${DST_REPO_PATH}/issues/${ISSUE_ID}"
-        ISSUE_OUTCOME="Updated ${ISSUE_URL}"
+        ISSUE_OUTCOME="Updated"
     fi
-    gh issue comment "${ISSUE_URL}" --body-file - <<-EOF
-		Failed to ${TITLE}
-		
-		Upstream   : [${SRC_HEAD_SHA}](https://github.com/${SRC_REPO_PATH}/commit/${SRC_HEAD_SHA})
-		Downstream : [${DST_HEAD_SHA}](https://github.com/${DST_REPO_PATH}/commit/${DST_HEAD_SHA})
-		
-		\`\`\`
-		$(cat "${SCRATCH}/mergeout" || true)
-		\`\`\`
-	EOF
-    notice "${ISSUE_OUTCOME}"
+    COMMENT_URL=$(\
+        gh issue comment "${ISSUE_URL}" --body-file - <<-EOF
+			Failed to ${TITLE}
+			
+			Upstream   : [${SRC_HEAD_SHA}](https://github.com/${SRC_REPO_PATH}/commit/${SRC_HEAD_SHA})
+			Downstream : [${DST_HEAD_SHA}](https://github.com/${DST_REPO_PATH}/commit/${DST_HEAD_SHA})
+			
+			\`\`\`
+			$(cat "${SCRATCH}/mergeout" || true)
+			\`\`\`
+		EOF
+    )
+    notice "${ISSUE_OUTCOME} [ISSUE#${ISSUE_ID}](${COMMENT_URL})"
     exit 1
 fi
