@@ -119,9 +119,10 @@ else # merge fail
 		Upstream   : [${SRC_HEAD_SHA}](https://github.com/${SRC_REPO_PATH}/commit/${SRC_HEAD_SHA})
 		Downstream : [${DST_HEAD_SHA}](https://github.com/${DST_REPO_PATH}/commit/${DST_HEAD_SHA})
 		
-		======================== begin git-merge output ========================
+		git merge output:
+		\`\`\`
 		$(cat "${SCRATCH}/mergeout" || true)
-		========================= end git-merge output =========================
+		\`\`\`
 	EOF
     notice "${ISSUE_OUTCOME}"
     exit 1
