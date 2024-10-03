@@ -66,7 +66,6 @@ gh repo set-default "${DST_REPO_PATH}"
 git config set --local merge.log 100000
 
 # Perform the merge using --no-ff option to force creating a merge commit
-notice "Performing ${TITLE}"
 if git merge --no-ff -m "${TITLE}" --log "upstream/${SRC_BRANCH_NAME}" > "${SCRATCH}/mergeout"; then
     DST_NEW_HEAD_SHA="$(git rev-parse HEAD)"
     if [[ "${DST_NEW_HEAD_SHA}" != "${DST_HEAD_SHA}" ]]; then
