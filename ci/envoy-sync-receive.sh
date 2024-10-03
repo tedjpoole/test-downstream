@@ -22,12 +22,7 @@
 
 set -xeuo pipefail
 
-[[ -t 1 ]] && ANSI_GREEN="\033[0;32m"
-[[ -t 1 ]] && ANSI_RED="\033[0;31m"
-[[ -t 1 ]] && ANSI_RESET="\033[0m"
-
-notice() { printf "${ANSI_GREEN:-}::notice:: %s${ANSI_RESET:-}\n" "$1"; }
-error() { printf "${ANSI_RED:-}::error:: %s${ANSI_RESET:-}\n" "$1"; }
+notice() { printf "::notice:: %s\n" "$1"; }
 
 SCRATCH="$(mktemp -d)"
 cleanup() {
@@ -103,7 +98,7 @@ if git merge --no-ff -m "${TITLE}" --log "upstream/${SRC_BRANCH_NAME}" > "${SCRA
         notice "Closed ${ISSUE_URL}"
     done
 else # merge fail
-    error "${TITLE} failed"
+    notice "${TITLE} failed"
     ISSUE_COUNT=$(gh issue list -S "${TITLE} failed" | wc -l)
     if [[ ${ISSUE_COUNT} == 0 ]]; then
         ISSUE_URL=$(gh issue create --title "${TITLE} failed" --body "${TITLE} failed")
@@ -119,7 +114,6 @@ else # merge fail
 		Upstream   : [${SRC_HEAD_SHA}](https://github.com/${SRC_REPO_PATH}/commit/${SRC_HEAD_SHA})
 		Downstream : [${DST_HEAD_SHA}](https://github.com/${DST_REPO_PATH}/commit/${DST_HEAD_SHA})
 		
-		git merge output:
 		\`\`\`
 		$(cat "${SCRATCH}/mergeout" || true)
 		\`\`\`
