@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_name }}
+  group: ${{ github.workflow }}
 
 jobs:
   sync:
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ref_name:
+        branch_name:
           - main
           - release/v1.31
           - release/v1.28
@@ -28,13 +28,19 @@ jobs:
         key: ${{ secrets.ENVOY_CI_UPDATE_BOT_KEY }}
         app_id: ${{ secrets.ENVOY_CI_UPDATE_APP_ID }}
 
-    - name: "Checkout ${{ github.repository }}[${{ matrix.ref_name }}]"
+    # Checkout the branch we're merging into
+    - name: "Checkout ${{ github.repository }}[${{ matrix.branch_name }}]"
       uses: actions/checkout@v4
       with:
         token: ${{ steps.appauth.outputs.token }}
-        ref: ${{ matrix.ref_name }}
+        ref: ${{ matrix.branch_name }}
         fetch-depth: 0
 
+    # Configure the git user info on the repository
+    - run: git config user.name "${{ github.actor }}"
+    - run: git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+    # Checkout & run the script from the default branch
     - name: 'Checkout ci/envoy-sync-receive.sh'
       uses: actions/checkout@v4
       with:
@@ -42,12 +48,6 @@ jobs:
         sparse-checkout: 'ci/envoy-sync-receive.sh'
         sparse-checkout-cone-mode: false
         path: '.script'
-
-    - name: "Set git user details"
-      run: |
-        git config user.name "${{ github.actor }}"
-        git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-
-    - run: .script/ci/envoy-sync-receive.sh ${{ matrix.ref_name }}
+    - run: .script/ci/envoy-sync-receive.sh ${{ matrix.branch_name }}
       env:
           GH_TOKEN: ${{ steps.appauth.outputs.token }}
