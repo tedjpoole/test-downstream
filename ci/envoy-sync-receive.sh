@@ -120,6 +120,6 @@ else # merge fail
 			\`\`\`
 		EOF
     )
-    notice "${ISSUE_OUTCOME} [ISSUE#${ISSUE_ID}](${COMMENT_URL})"
+    notice "${ISSUE_OUTCOME} ISSUE#${ISSUE_ID} (${COMMENT_URL})"
     exit 1
 fi

@@ -1,4 +1,4 @@
-name: Scheduled Sync
+name: Sync from Upstream (Scheduled)
 
 permissions:
   contents: read
