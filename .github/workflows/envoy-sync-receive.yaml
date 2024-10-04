@@ -1,0 +1,32 @@
+# This workflow is invoked from the envoy-sync.yaml workflow in the upstream
+# envoy repository. Each time there is a push to one of the branches listed in
+# the upstream envoy-sync.yaml workflow, this workflow will be invoked, with the
+# branch name passed as an input.
+
+# Currently this workflow does nothing because we currently sync from upstream
+# envoy on a regular timed schedule via the envoy-sync-scheduled.yaml workflow,
+# instead of being triggered on every upstream push.
+
+name: Sync from Upstream (Pushed)
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        type: string
+        required: true
+        description: 'Which branch to sync'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-22.04
+    if: false
+    steps:
+    - run: echo 'Does nothing' 
