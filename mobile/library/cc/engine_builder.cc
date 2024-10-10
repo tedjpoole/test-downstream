@@ -222,8 +222,8 @@ EngineBuilder& EngineBuilder::addQuicCanonicalSuffix(std::string suffix) {
   return *this;
 }
 
-EngineBuilder& EngineBuilder::enablePortMigration(bool enable_port_migration) {
-  enable_port_migration_ = enable_port_migration;
+EngineBuilder& EngineBuilder::setNumTimeoutsToTriggerPortMigration(int num_timeouts) {
+  num_timeouts_to_trigger_port_migration_ = num_timeouts;
   return *this;
 }
 
@@ -733,12 +733,12 @@ std::unique_ptr<envoy::config::bootstrap::v3::Bootstrap> EngineBuilder::generate
           ->add_canonical_suffixes(suffix);
     }
 
-    if (enable_port_migration_) {
+    if (num_timeouts_to_trigger_port_migration_ > 0) {
       alpn_options.mutable_auto_config()
           ->mutable_http3_protocol_options()
           ->mutable_quic_protocol_options()
           ->mutable_num_timeouts_to_trigger_port_migration()
-          ->set_value(4);
+          ->set_value(num_timeouts_to_trigger_port_migration_);
     }
 
     alpn_options.mutable_auto_config()
@@ -851,6 +851,7 @@ std::unique_ptr<envoy::config::bootstrap::v3::Bootstrap> EngineBuilder::generate
   }
 
   (*runtime_values.mutable_fields())["disallow_global_stats"].set_bool_value(true);
+  (*runtime_values.mutable_fields())["enable_dfp_dns_trace"].set_bool_value(true);
   ProtobufWkt::Struct& overload_values =
       *(*envoy_layer.mutable_fields())["overload"].mutable_struct_value();
   (*overload_values.mutable_fields())["global_downstream_max_connections"].set_string_value(
