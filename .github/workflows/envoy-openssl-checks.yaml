@@ -1,0 +1,11 @@
+name: envoy-openssl-checks
+
+on: pull_request
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - run: ./ci/run_envoy_docker.sh ./ci/do_ci.sh release
